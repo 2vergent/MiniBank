@@ -1,13 +1,13 @@
-#include<stdio.h>
-#include<ctype.h>
-#include<string.h>
+#include <stdio.h>
+#include <ctype.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <pwd.h>
 #include <unistd.h>
 
 
-void actualsignup(char *user, char *pass, char *ifsc)
+void actualsignup(char user[], char pass[], char ifsc[])
 {
     uid_t uid = getuid();
 	struct passwd *pw = getpwuid(uid);
@@ -16,7 +16,10 @@ void actualsignup(char *user, char *pass, char *ifsc)
     chdir(filepath);
     mkdir("Bank", 0777);
     chdir(bank);
-    printf("Dir: %s\n", *user);
+    FILE *udata;
+    udata = fopen("userdata.txt", "a+");
+    fprintf(udata, "%s %s %s \n", user, pass, ifsc);
+    fclose(udata);
 }
 
 
@@ -46,6 +49,12 @@ void signup(void)
         {
             check = 1;
         }
+    }
+    char user[strlen(username)];
+    int i;
+    for(i=0; i<strlen(username); i++)
+    {
+        user[i] = username[i];
     }
     check = 0;
     while (!check)
@@ -88,7 +97,7 @@ void signup(void)
             check = 1;
         }
     }
-    actualsignup(username, password, ifsc);
+    actualsignup(user, password, ifsc);
 }
 
 
