@@ -7,44 +7,35 @@
 #include <unistd.h>
 
 
-void encrypt(char user[],char pass[],char ifsc[])
+int arrcompare(char arr1[], char arr2[])
 {
+    if(strlen(arr1) != strlen(arr2))
+    {
+        return 0;
+    }
     int i;
-    for(i=1; user[i-1]!='\0'; i++)
+    for(i=0; i<strlen(arr2); i++)
     {
-        user[i-1] = (int)user[i-1] + i;	
+        if(arr1[i] != arr2[i])
+        {
+            return 0;
+        }
     }
-    for(i=1; pass[i-1]!='\0'; i++)
-    {
-        pass[i-1] = (int)pass[i-1] + i;	
-    }
-    for(i=1; ifsc[i-1]!='\0'; i++)
-    {
-        ifsc[i-1] = (int)ifsc[i-1] + i;	
-    }
+    return 1;
 }
 
 
-void decrypt(char user[],char pass[],char ifsc[])
+void loggedin(char user[], char pass[], char ifsc[])
 {
-    int i;
-    for(i=1; user[i-1]!='\0'; i++)
-    {
-        user[i-1] = (int)user[i-1] - i;	
-    }
-    for(i=1; pass[i-1]!='\0'; i++)
-    {
-        pass[i-1] = (int)pass[i-1] - i;	
-    }
-    for(i=1; ifsc[i-1]!='\0'; i++)
-    {
-        ifsc[i-1] = (int)ifsc[i-1] - i;	
-    }
+    printf("Finally, you're logged in.\n");
 }
 
 
 void actuallogin(char user[], char pass[], char ifsc[])
 {
+    int checklog = 0;;
+    char c;
+    int count;
     uid_t uid = getuid();
 	struct passwd *pw = getpwuid(uid);
     char *filepath = pw->pw_dir;
@@ -53,12 +44,98 @@ void actuallogin(char user[], char pass[], char ifsc[])
     mkdir("Bank", 0777);
     chdir(bank);
     FILE* reading;
+    reading = fopen("userdata.txt", "r");
+    for (c = getc(reading); c != EOF; c = getc(reading))
+    {
+        if (c == '\n')
+        {
+            count = count + 1;
+        }
+    }
+    char userin[16], passin[16], ifscin[12];
+    fclose(reading);
     int bufferLength = 255;
     char buffer[bufferLength];
-    reading = fopen("file.txt", "r");
+    reading = fopen("userdata.txt", "r");
     while(fgets(buffer, bufferLength, reading)) 
     {
-        printf("%s\n", buffer);
+        int count;
+        int i;
+        for(i=0; i<strlen(buffer); i++)
+        {
+            if(buffer[i] != '|')
+            {
+                userin[i] = buffer[i];
+                count = i;
+            }
+            else
+            {
+                break;
+            }
+        }
+        printf("Username: |%s|%s|\n", user, userin);
+        if(arrcompare(userin, user))
+        {
+            int j, k = 0;
+            for(j=count + 2; j<strlen(buffer); j++)
+            {
+                if(buffer[j] != '|')
+                {
+                    passin[k] = buffer[j];
+                    count = j;
+                    k++;
+                }
+                else
+                {
+                    break;
+                }
+            }
+            printf("Password: |%s|%s|\n", pass, passin);
+            if(arrcompare(pass, passin))
+            {
+                int i; int j = 0;
+                for(i=count + 2; i<strlen(buffer); i++)
+                {
+                    if(buffer[i] != '|')
+                    {
+                        ifscin[j] = buffer[i];
+                        j++;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                printf("IFSC: |%s|%s|\n", ifsc, ifscin);
+                if(arrcompare(ifsc, ifscin))
+                {
+                    checklog = 1;
+                }
+                else
+                {
+                    printf("Invalid IFSC Code.\n");
+                    return;
+                }
+            }
+            else
+            {
+                printf("Invalid password.\n");
+                return;
+            }
+        }
+        else
+        {
+            memset(userin, 0, sizeof(userin));
+            continue;
+        }
+    }
+    if(checklog)
+    {
+        loggedin(user, pass, ifsc);
+    }
+    else
+    {
+        return;
     }
     fclose(reading);
 }
@@ -66,7 +143,7 @@ void actuallogin(char user[], char pass[], char ifsc[])
 
 void login(void)
 {
-    char username[15], password[15], ifsc[11];
+    char username[16], password[16], ifsc[12];
     int check = 0;
     while(!check)
     {
@@ -112,7 +189,6 @@ void login(void)
     {
         printf("Enter IFSC Code: ");
         scanf("%s[^\n]", ifsc);
-        printf("yes");
         int i;
         if(strlen(ifsc) != 11)
         {
@@ -123,21 +199,18 @@ void login(void)
         {
             check = 1;
         }
-        printf("yes");
     }
     char ifs[strlen(ifsc)];
     for(i=0; i<strlen(ifsc); i++)
     {
         ifs[i] = ifsc[i];
     }
-    printf("%S %s %s", user, pass, ifs);
-    actuallogin(user, pass, ifs);
+    actuallogin(username, password, ifsc);
 }
 
 
 void actualsignup(char user[], char pass[], char ifsc[])
 {
-    encrypt(user, pass, ifsc);
     uid_t uid = getuid();
 	struct passwd *pw = getpwuid(uid);
     char *filepath = pw->pw_dir;
@@ -147,7 +220,7 @@ void actualsignup(char user[], char pass[], char ifsc[])
     chdir(bank);
     FILE *udata;
     udata = fopen("userdata.txt", "a+");
-    fprintf(udata, "%s %s %s \n", user, pass, ifsc);
+    fprintf(udata, "%s|%s|%s|\n", user, pass, ifsc);
     fclose(udata);
 }
 
@@ -250,4 +323,3 @@ int main(void)
     }
     return 0;
 }
-
