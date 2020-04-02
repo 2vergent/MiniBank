@@ -7,6 +7,18 @@
 #include <unistd.h>
 
 
+void changedir(void)
+{
+    uid_t uid = getuid();
+	struct passwd *pw = getpwuid(uid);
+    char *filepath = pw->pw_dir;
+    char *bank = "Bank";
+    chdir(filepath);
+    mkdir("Bank", 0777);
+    chdir(bank);
+}
+
+
 int arrcompare(char arr1[], char arr2[])
 {
     if(strlen(arr1) != strlen(arr2))
@@ -28,6 +40,10 @@ int arrcompare(char arr1[], char arr2[])
 void loggedin(char user[], char pass[], char ifsc[])
 {
     printf("Finally, you're logged in.\n");
+    printf("Username: %s\n", user);
+    printf("Password: %s\n", pass);
+    printf("ifsc: %s\n", ifsc);
+
 }
 
 
@@ -36,13 +52,7 @@ void actuallogin(char user[], char pass[], char ifsc[])
     int checklog = 0;;
     char c;
     int count;
-    uid_t uid = getuid();
-	struct passwd *pw = getpwuid(uid);
-    char *filepath = pw->pw_dir;
-    char *bank = "Bank";
-    chdir(filepath);
-    mkdir("Bank", 0777);
-    chdir(bank);
+    changedir();
     FILE* reading;
     reading = fopen("userdata.txt", "r");
     for (c = getc(reading); c != EOF; c = getc(reading))
@@ -73,7 +83,6 @@ void actuallogin(char user[], char pass[], char ifsc[])
                 break;
             }
         }
-        printf("Username: |%s|%s|\n", user, userin);
         if(arrcompare(userin, user))
         {
             int j, k = 0;
@@ -90,7 +99,6 @@ void actuallogin(char user[], char pass[], char ifsc[])
                     break;
                 }
             }
-            printf("Password: |%s|%s|\n", pass, passin);
             if(arrcompare(pass, passin))
             {
                 int i; int j = 0;
@@ -106,7 +114,7 @@ void actuallogin(char user[], char pass[], char ifsc[])
                         break;
                     }
                 }
-                printf("IFSC: |%s|%s|\n", ifsc, ifscin);
+                ifscin[12] = '\0';
                 if(arrcompare(ifsc, ifscin))
                 {
                     checklog = 1;
@@ -211,17 +219,27 @@ void login(void)
 
 void actualsignup(char user[], char pass[], char ifsc[])
 {
-    uid_t uid = getuid();
-	struct passwd *pw = getpwuid(uid);
-    char *filepath = pw->pw_dir;
-    char *bank = "Bank";
-    chdir(filepath);
-    mkdir("Bank", 0777);
-    chdir(bank);
+    changedir();
     FILE *udata;
     udata = fopen("userdata.txt", "a+");
     fprintf(udata, "%s|%s|%s|\n", user, pass, ifsc);
     fclose(udata);
+    char details[10], txt[] = ".txt";
+    int i, j = 10;
+    for(i=0; i<6; i++)
+    {
+        details[i] = ifsc[j];
+        j--;
+    }
+    j = 0;
+    for(i=6; i<10; i++)
+    {
+        details[i] = txt[j];
+        j++;
+    }
+    FILE *create;
+    create = fopen(details, "w");
+    fclose(create);
 }
 
 
@@ -258,6 +276,7 @@ void signup(void)
     {
         user[i] = username[i];
     }
+    user[strlen(username)] = '\0';
     check = 0;
     while (!check)
     {
