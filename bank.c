@@ -37,12 +37,74 @@ int arrcompare(char arr1[], char arr2[])
 }
 
 
+void details(char user[], char pass[], char ifsc[])
+{
+    char fullname[15], upihandler[15], upipassword[5], accno[11];
+    long int balance;
+    int size;
+    char userfile[strlen(user) + 4], txt[] = ".txt";
+    int i;
+    for(i=0; i<strlen(user); i++)
+    {
+        userfile[i] = user[i];
+    }
+    int j = 0;
+    for(i=strlen(user); i<(strlen(user) + 4); i++)
+    {
+        userfile[i] = txt[j];
+        j++;
+    }
+    userfile[strlen(user) + 4] = '\0';
+    FILE *fp;
+    fp = fopen(userfile, "r");
+    if (NULL != fp) {
+    fseek (fp, 0, SEEK_END);
+    size = ftell(fp);
+    if (0 == size) 
+    {
+        printf("Proceed to enter your full details: \n");
+        printf("Enter Full Name: ");
+        scanf("%s", fullname);
+        printf("Enter Bank Account Number: ");
+        scanf("%s", accno);
+        printf("Enter Bank Balance: ");
+        scanf("%ld", &balance);
+        printf("Enter UPI Handler: ");
+        scanf("%s", upihandler);
+        printf("Enter UPI Password: ");
+        scanf("%s", upipassword);
+        FILE *writedetails;
+        writedetails = fopen(userfile, "w");
+        fprintf(writedetails, "Full Name: %s\n", fullname);
+        fprintf(writedetails, "Bank Account Number: %s\n", accno);
+        fprintf(writedetails, "Bank Balance: %ld\n", balance);
+        fprintf(writedetails, "UPI Handler: %s\n", upihandler);
+        fprintf(writedetails, "UPI Password: %s\n", upipassword);
+        fclose(writedetails);
+    }
+}
+}
+
+
 void loggedin(char user[], char pass[], char ifsc[])
 {
     printf("Finally, you're logged in.\n");
     printf("Username: %s\n", user);
     printf("Password: %s\n", pass);
     printf("ifsc: %s\n", ifsc);
+    char c1[] = "details";
+    char choice[10];
+    int check = 1;
+    while(check)
+    {
+        printf(" > ");
+        scanf("%s", choice);
+        if(arrcompare(choice, c1))
+        {
+            details(user, pass, ifsc);
+            check = 0;
+        }
+    }
 
 }
 
@@ -224,19 +286,19 @@ void actualsignup(char user[], char pass[], char ifsc[])
     udata = fopen("userdata.txt", "a+");
     fprintf(udata, "%s|%s|%s|\n", user, pass, ifsc);
     fclose(udata);
-    char details[10], txt[] = ".txt";
-    int i, j = 10;
-    for(i=0; i<6; i++)
+    char details[strlen(user) + 4], txt[] = ".txt";
+    int i;
+    for(i=0; i<strlen(user); i++)
     {
-        details[i] = ifsc[j];
-        j--;
+        details[i] = user[i];
     }
-    j = 0;
-    for(i=6; i<10; i++)
+    int j = 0;
+    for(i=strlen(user); i<(strlen(user) + 4); i++)
     {
         details[i] = txt[j];
         j++;
     }
+    details[strlen(user) + 4] = '\0';
     FILE *create;
     create = fopen(details, "w");
     fclose(create);
