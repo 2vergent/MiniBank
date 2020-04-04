@@ -1,10 +1,94 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <pwd.h>
 #include <unistd.h>
+
+
+void encrypt_(char user[],char pass[],char ifsc[])
+{
+	int a, b, c, i;
+	for(a=0;user[a]!='\0';a++);
+
+	b=(int)user[0]-(int)user[a];
+
+	if(b > 0)
+	{
+		for(c=0;user[c]!='\0';c++)
+		{
+			user[i] = (int)user[i] + b;
+		}
+		for(c=0;pass[c]!='\0';c++)
+		{
+			pass[i] = (int)pass[i] + b;
+		}
+		for(c=0;ifsc[c]!='\0';c++)
+		{
+			ifsc[i] = (int)ifsc[i] + b;
+		}
+	}
+	else
+	{
+		for(c=0;user[c]!='\0';c++)
+		{
+			user[i] = (int)user[i] + c +1;
+		}
+		for(c=0;pass[c]!='\0';c++)
+		{
+			pass[i] = (int)pass[i] + c +1;
+		}
+		for(c=0;ifsc[c]!='\0';c++)
+		{
+			ifsc[i] = (int)ifsc[i] + c +1;
+		}	
+	}		
+}
+
+void decrypt_(char user[],char something[])
+{
+	int a,b,c;
+	for(a=0;user[a]!='\0';a++);
+	b=(int)user[0]-(int)user[a];
+	if(b > 0)
+	{
+		for(c=0;something[c]!='\0';c++)
+		{
+		something[c] = (int)something[c] - b;	
+		}	
+	}
+	else
+	{
+		for(c=0;something[c]!='\0';c++)
+		{
+		something[c] = (int)something[c] - c -1;
+		}	
+	}
+}
+
+
+void encrypt(char something[])
+{
+	int shift = 2;	
+	int b;
+	for(b=0;something[b]!='\0';b++)
+	{
+		something[b]=(int)something[b] + shift;
+	}
+}
+
+
+void decrypt(char something[])
+{
+	int shift = 2;	
+	int b;
+	for(b=0;something[b]!='\0';b++)
+	{
+		something[b]=(int)something[b] - shift;
+	}
+}
 
 
 void changedir(void)
@@ -37,6 +121,159 @@ int arrcompare(char arr1[], char arr2[])
 }
 
 
+void get_upi_handler(char user[])
+{
+    char userfile[strlen(user) + 4], txt[] = ".txt";
+    int i;
+    for(i=0; i<strlen(user); i++)
+    {
+        userfile[i] = user[i];
+    }
+    int j = 0;
+    for(i=strlen(user); i<(strlen(user) + 4); i++)
+    {
+        userfile[i] = txt[j];
+        j++;
+    }
+    userfile[strlen(user) + 4] = '\0';
+}
+
+
+long int getbalance(char user[])
+{
+    char userfile[strlen(user) + 4], txt[] = ".txt";
+    int i;
+    for(i=0; i<strlen(user); i++)
+    {
+        userfile[i] = user[i];
+    }
+    int j = 0;
+    for(i=strlen(user); i<(strlen(user) + 4); i++)
+    {
+        userfile[i] = txt[j];
+        j++;
+    }
+    userfile[strlen(user) + 4] = '\0';
+    FILE *fp;
+    fp = fopen(userfile, "r");
+    int bufferLength = 255;
+    char gotbalance[255];
+    char buffer[bufferLength];
+    i = 0;
+    int k = 0;
+    while(fgets(buffer, bufferLength, fp)) 
+    {
+        if (i == 2)
+        {
+            int j;
+            for(j=14; j<strlen(buffer) - 1; j++)
+            {
+                gotbalance[k] = buffer[j];
+                k++;
+            }
+        }
+        i++;
+    }
+    gotbalance[k+1] = '\0';
+    long int balance = atoi(gotbalance);
+    return balance;
+}
+
+
+void changebalance(char user[], char choice[])
+{
+    long int current, amount, remaining;
+    current = getbalance(user);
+    char c1[] = "withdraw";
+    char c2[] = "deposit";
+    if(arrcompare(choice, c1))
+    {
+        printf("Enter Amount to be withdrawn (Balance: %ld): ", current);
+        scanf("%ld", &amount);
+        if(amount > current)
+        {
+            printf("Cannot withdraw amount larger than current balance.");
+            return;
+        }
+        remaining = current - amount;
+    }
+    else
+    {
+        printf("Enter Ammount to be deposited (Balance: %ld): ", current);
+        scanf("%ld", &amount);
+        remaining = current + amount;
+    }
+    
+    char userfile[strlen(user) + 4], txt[] = ".txt";
+    int i;
+    for(i=0; i<strlen(user); i++)
+    {
+        userfile[i] = user[i];
+    }
+    int j = 0;
+    for(i=strlen(user); i<(strlen(user) + 4); i++)
+    {
+        userfile[i] = txt[j];
+        j++;
+    }
+    userfile[strlen(user) + 4] = '\0';
+    FILE *change;
+    FILE *tempfile;
+    change = fopen(userfile, "r");
+    tempfile = fopen("replace.tmp", "w");
+    int bufferLength = 255;
+    char buffer[bufferLength];
+    i = 0;
+    while(fgets(buffer, bufferLength, change)) 
+    {
+        if (i == 2)
+        {
+            fprintf(tempfile, "Bank Balance: %ld\n", remaining);
+        }
+        else
+        {
+            fputs(buffer, tempfile);
+        }
+        i++;
+    }
+    fclose(change);
+    fclose(tempfile);
+    remove(userfile);
+    rename("replace.tmp", userfile);
+}
+
+
+void showbalance(char user[])
+{
+    char userfile[strlen(user) + 4], txt[] = ".txt";
+    int i;
+    for(i=0; i<strlen(user); i++)
+    {
+        userfile[i] = user[i];
+    }
+    int j = 0;
+    for(i=strlen(user); i<(strlen(user) + 4); i++)
+    {
+        userfile[i] = txt[j];
+        j++;
+    }
+    userfile[strlen(user) + 4] = '\0';
+    FILE *balancecheck;
+    balancecheck = fopen(userfile, "r");
+    int bufferLength = 255;
+    char buffer[bufferLength];
+    i = 0;
+    while(fgets(buffer, bufferLength, balancecheck)) 
+    {
+        if(i == 2)
+        {
+            printf("%s", buffer);
+        }
+        i++;
+    }
+}
+
+
 void details(char user[], char pass[], char ifsc[])
 {
     char fullname[15], upihandler[15], upipassword[5], accno[11];
@@ -57,32 +294,46 @@ void details(char user[], char pass[], char ifsc[])
     userfile[strlen(user) + 4] = '\0';
     FILE *fp;
     fp = fopen(userfile, "r");
-    if (NULL != fp) {
-    fseek (fp, 0, SEEK_END);
-    size = ftell(fp);
-    if (0 == size) 
+    if (NULL != fp)
     {
-        printf("Proceed to enter your full details: \n");
-        printf("Enter Full Name: ");
-        scanf("%s", fullname);
-        printf("Enter Bank Account Number: ");
-        scanf("%s", accno);
-        printf("Enter Bank Balance: ");
-        scanf("%ld", &balance);
-        printf("Enter UPI Handler: ");
-        scanf("%s", upihandler);
-        printf("Enter UPI Password: ");
-        scanf("%s", upipassword);
-        FILE *writedetails;
-        writedetails = fopen(userfile, "w");
-        fprintf(writedetails, "Full Name: %s\n", fullname);
-        fprintf(writedetails, "Bank Account Number: %s\n", accno);
-        fprintf(writedetails, "Bank Balance: %ld\n", balance);
-        fprintf(writedetails, "UPI Handler: %s\n", upihandler);
-        fprintf(writedetails, "UPI Password: %s\n", upipassword);
-        fclose(writedetails);
+        fseek (fp, 0, SEEK_END);
+        size = ftell(fp);
+        if (size == 0) 
+        {
+            printf("Proceed to enter your full details: \n");
+            printf("Enter Full Name: ");
+            scanf("%s", fullname);
+            printf("Enter Bank Account Number: ");
+            scanf("%s", accno);
+            printf("Enter Bank Balance: ");
+            scanf("%ld", &balance);
+            printf("Enter UPI Handler: ");
+            scanf("%s", upihandler);
+            printf("Enter UPI Password: ");
+            scanf("%s", upipassword);
+            FILE *writedetails;
+            writedetails = fopen(userfile, "w");
+            fprintf(writedetails, "Full Name: %s\n", fullname);
+            fprintf(writedetails, "Bank Account Number: %s\n", accno);
+            fprintf(writedetails, "Bank Balance: %ld\n", balance);
+            fprintf(writedetails, "UPI Handler: %s\n", upihandler);
+            fprintf(writedetails, "UPI Password: %s\n", upipassword);
+            fclose(writedetails);
+        }
+        else
+        {
+            printf("YOUR FULL DETAILS : \n");
+            FILE *printdetails;
+            printdetails = fopen(userfile, "r");
+            int bufferLength = 255;
+            char buffer[bufferLength];
+            while(fgets(buffer, bufferLength, printdetails)) 
+            {
+                printf("%s", buffer);
+            }
+        }
+        
     }
-}
 }
 
 
@@ -93,6 +344,9 @@ void loggedin(char user[], char pass[], char ifsc[])
     printf("Password: %s\n", pass);
     printf("ifsc: %s\n", ifsc);
     char c1[] = "details";
+    char c2[] = "balance";
+    char c3[] = "withdraw";
+    char c4[] = "deposit";
     char choice[10];
     int check = 1;
     while(check)
@@ -102,7 +356,14 @@ void loggedin(char user[], char pass[], char ifsc[])
         if(arrcompare(choice, c1))
         {
             details(user, pass, ifsc);
-            check = 0;
+        }
+        else if(arrcompare(choice, c2))
+        {
+            showbalance(user);
+        }
+        else if(arrcompare(choice, c3) || arrcompare(choice, c4))
+        {
+            changebalance(user, choice);
         }
     }
 
@@ -145,6 +406,7 @@ void actuallogin(char user[], char pass[], char ifsc[])
                 break;
             }
         }
+        decrypt(userin);
         if(arrcompare(userin, user))
         {
             int j, k = 0;
@@ -161,6 +423,7 @@ void actuallogin(char user[], char pass[], char ifsc[])
                     break;
                 }
             }
+            decrypt(passin);
             if(arrcompare(pass, passin))
             {
                 int i; int j = 0;
@@ -177,6 +440,7 @@ void actuallogin(char user[], char pass[], char ifsc[])
                     }
                 }
                 ifscin[12] = '\0';
+                decrypt(ifscin);
                 if(arrcompare(ifsc, ifscin))
                 {
                     checklog = 1;
@@ -282,9 +546,18 @@ void login(void)
 void actualsignup(char user[], char pass[], char ifsc[])
 {
     changedir();
+    char euser[strlen(user)];
+    strcpy(euser, user);
+    char epass[strlen(pass)];
+    strcpy(epass, pass);
+    char eifsc[strlen(ifsc)];
+    strcpy(eifsc, ifsc);
+    encrypt(euser);
+    encrypt(epass);
+    encrypt(eifsc);
     FILE *udata;
     udata = fopen("userdata.txt", "a+");
-    fprintf(udata, "%s|%s|%s|\n", user, pass, ifsc);
+    fprintf(udata, "%s|%s|%s|\n", euser, epass, eifsc);
     fclose(udata);
     char details[strlen(user) + 4], txt[] = ".txt";
     int i;
